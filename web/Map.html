@@ -26,7 +26,7 @@
             Map.init();
             requestComments();
         });
-        var frequencySeconds = 60;
+        var frequencySeconds = 5;
         function getSeconds(seconds) {
             return seconds * 1000;
         }
@@ -63,8 +63,6 @@
                             userList[el.author] = { name: el.author, comment: el.body, date: new Date(el.created_utc*1000) };
                             userRecord = userList[el.author];
                         }
-
-                        // subredditRecord.users.push({ date: new Date(el.created_utc*1000), author: el.author, comment: el.body });
                     });
                     console.log(Object.keys(subredditList).length);
                     console.log(subredditList);
