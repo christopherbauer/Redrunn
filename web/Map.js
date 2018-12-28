@@ -8,9 +8,11 @@ var Map = function() {
         graph: null,
         radius: 10,
         createSubRedditNode: function(id) {
-            this.graph.data.push({ id: "r/"+id });
-            // console.log(this.graph.data);
-            this.updateSimulation();
+            this.graph.subreddits.push({ id: id, name: "r/"+id });
+            // console.log(this.graph.subreddits);
+        },
+        createUserNode: function(authorId, subredditId) {
+            this.graph.users.push({ id: authorId });
         },
         init: function() {
             this.svg = d3.select("body")
@@ -21,7 +23,8 @@ var Map = function() {
                 
             this.graph =
                 {
-                    data: [],
+                    subreddits: [],
+                    users: [],
                     links: []
                 };
 
@@ -56,7 +59,7 @@ var Map = function() {
         nodeGroup: null,
         updateGraph: function() {
             this.nodeElements = this.nodeGroup.selectAll("g")
-                .data(this.graph.data);
+                .data(this.graph.subreddits);
             
             this.nodeElements.exit().remove();
 
@@ -76,14 +79,14 @@ var Map = function() {
                 .append("text")
                     .attr("y", -15)
                     .attr("x", d => -((d.id.length * 12) / 4))
-                    .text(d => d.id)
+                    .text(d => d.name)
                 ;
 
             this.nodeElements = nodeEnter.merge(this.nodeElements);
         },
         updateSimulation: function() {    
             this.updateGraph();
-            this.simulation.nodes(this.graph.data).on("tick", () => {
+            this.simulation.nodes(this.graph.subreddits).on("tick", () => {
             
                 this.nodeElements
                     .attr('transform', node => "translate(" + node.x + "," + node.y + ")")

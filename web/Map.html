@@ -21,6 +21,7 @@
 </head>
     <script type="text/javascript">    
         var subredditList = {};
+        var userList = {};
         document.addEventListener("DOMContentLoaded", function(event) {
             Map.init();
             requestComments();
@@ -51,14 +52,22 @@
                         var subredditRecord = subredditList[el.subreddit];
                         if(!subredditRecord) {
                             Map.createSubRedditNode(el.subreddit);
-                            subredditList[el.subreddit] = { name: el.subreddit, count: 0, users: [ ] };
+                            subredditList[el.subreddit] = { name: el.subreddit, count: 0 };
                             subredditRecord = subredditList[el.subreddit];
                         } 
                         subredditRecord.count += 1;
-                        subredditRecord.users.push({ date: new Date(el.created_utc*1000), author: el.author, comment: el.body });
+                        var userRecord = userList[el.author];
+                        if(!userRecord) {
+                            Map.createUserNode(el.author, el.subreddit);
+                            userList[el.author] = { name: el.author, comment: el.body, date: new Date(el.created_utc*1000) };
+                            userRecord = userList[el.author];
+                        }
+
+                        // subredditRecord.users.push({ date: new Date(el.created_utc*1000), author: el.author, comment: el.body });
                     });
                     console.log(Object.keys(subredditList).length);
                     console.log(subredditList);
+                    Map.updateSimulation();
                 }
             }
 
