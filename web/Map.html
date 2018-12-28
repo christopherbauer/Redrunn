@@ -36,11 +36,12 @@
         function requestComments() {
             const Http = new XMLHttpRequest();
             const baseUrl = "https://api.pushshift.io/reddit/comment/search";
-            var currentTime = new Date().getTime();
-            currentTime -= getSeconds(frequencySeconds);
-            console.log(new Date(currentTime));
-            const afterFilter = "after=" + parseInt(currentTime / 1000);
-            var url = baseUrl + "?" + afterFilter;
+            const maxAPISize = 500;
+            var filters = [
+                "after=" + frequencySeconds + "s",
+                "size=" + maxAPISize
+            ];
+            var url = baseUrl + "?" + filters.join("&");
             Http.open("GET", url);
             Http.send();
             Http.onreadystatechange = function() {
