@@ -7,8 +7,14 @@
         .map {
             background-color: white;
         }
-        circle {
+        .reddit circle {
+            fill: black;
+        }
+        .subreddit circle {
             fill: red;
+        }
+        .user circle {
+            fill: green;
         }
         .layer {
             position: absolute;
@@ -24,35 +30,36 @@
         var userList = {};
         document.addEventListener("DOMContentLoaded", function(event) {
             Map.init();
-            requestComments();
+            var redditId = Map.createRedditNode();
+            requestComments(redditId);
         });
-        var frequencySeconds = 5;
         function getSeconds(seconds) {
             return seconds * 1000;
         }
         function getMilliseconds(milliseconds) {
             return milliseconds * 1000;
         }
-        function requestComments() {
+        function requestComments(redditId) {
             const Http = new XMLHttpRequest();
             const baseUrl = "https://api.pushshift.io/reddit/comment/search";
             const maxAPISize = 500;
             var filters = [
-                "after=" + frequencySeconds + "s",
+                "after=" + Constants.FREQUENCY + "s",
                 "size=" + maxAPISize
             ];
             var url = baseUrl + "?" + filters.join("&");
+            console.log(url);
             Http.open("GET", url);
             Http.send();
             Http.onreadystatechange = function() {
                 if(this.readyState === 4 && this.status === 200) {
                     var returnJson = JSON.parse(Http.responseText);
                     // console.log(Http.responseText);
-                    console.log(returnJson);
+                    // console.log(returnJson);
                     returnJson.data.forEach(function(el) {
                         var subredditRecord = subredditList[el.subreddit];
                         if(!subredditRecord) {
-                            Map.createSubRedditNode(el.subreddit);
+                            Map.createSubRedditNode(el.subreddit, redditId);
                             subredditList[el.subreddit] = { name: el.subreddit, count: 0 };
                             subredditRecord = subredditList[el.subreddit];
                         } 
@@ -64,8 +71,8 @@
                             userRecord = userList[el.author];
                         }
                     });
-                    console.log(Object.keys(subredditList).length);
-                    console.log(subredditList);
+                    // console.log(Object.keys(subredditList).length);
+                    // console.log(subredditList);
                     Map.updateSimulation();
                 }
             }
@@ -78,5 +85,6 @@
     </body> 
     <script src="./node_modules/d3/dist/d3.min.js" type="text/javascript"></script>
     <!-- <script src="./Scripts/Constants.js" type="text/javascript"></script>-->
+    <script src="./Scripts/Constants.js" type="text/javascript"></script>
     <script src="./Map.js" type="text/javascript"></script>
 </html>

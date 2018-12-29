@@ -8,11 +8,16 @@ var Map = function() {
         graph: null,
         radius: 10,
         linkGroup: null,
-        createSubRedditNode: function(id) {
-            this.graph.subreddits.push({ id: id, name: "r/"+id });
+        createRedditNode: function() {
+            this.graph.reddit.push({ id: "reddit", name: "Reddit", type: NodeType.REDDIT });
+            return "reddit";
+        },
+        createSubRedditNode: function(subRedditId, redditId) {
+            this.graph.subreddits.push({ id: subRedditId, name: "r/"+subRedditId, type: NodeType.SUBREDDIT });
+            this.graph.links.push({ source: redditId, target: subRedditId });
         },
         createUserNode: function(authorId, subredditId) {
-            this.graph.users.push({ id: authorId });
+            this.graph.users.push({ id: authorId, type: NodeType.USER });
             this.graph.links.push({ source: subredditId, target: authorId });
         },
         init: function() {
@@ -24,6 +29,7 @@ var Map = function() {
                 
             this.graph =
                 {
+                    reddit: [],
                     subreddits: [],
                     users: [],
                     links: []
@@ -33,15 +39,27 @@ var Map = function() {
 
             var linkForce = d3.forceLink()
                 .id(link => link.id)
-                .distance(5)
-                .strength(link => .01);
+                .distance(10)
+                .strength(link => .0001);
             
             this.simulation = d3
                 .forceSimulation()
                 .force("link", linkForce)
                 .force("charge", d3.forceManyBody()
-                    .strength(.2)
-                    )
+                    .strength(node => {
+                        switch(node.NodeType) {
+                            case NodeType.REDDIT:
+                                return 0;
+                                break;
+                            case NodeType.SUBREDDIT:
+                                return -20;
+                                break;
+                            case NodeType.USER:
+                                return 35;
+                                break;
+                        }
+                    })
+                )
                 .force("collision", d3.forceCollide(this.radius*4))
                 .force("center", d3.forceCenter(this.width / 2, this.height / 2))
                 ;
@@ -58,6 +76,32 @@ var Map = function() {
         nodeElements: null,
         linkGroup: null,
         nodeGroup: null,
+        updateReddit: function() {
+            var elements = this.nodeGroup.selectAll("g.reddit")
+                .data(this.graph.reddit);
+            
+            var nodeEnter = elements.enter()
+                .append("g")
+                    .attr("class", "reddit")
+                    .attr("x", this.width / 2)
+                    .attr("y", this.height / 2)
+                    ;
+            nodeEnter
+                .append("circle")
+                    .attr("id", function(d) { return d.id; })
+                    .attr("data-id", d => d.id)
+                    .attr("stroke", "black")
+                    .attr("stroke-width", "1px")
+                    .attr("r", this.radius * 2);
+            nodeEnter
+                .append("text")
+                    .attr("y", -this.radius * 2)
+                    .attr("x", d => -((d.name.length * 12) / 4))
+                    .text(d => d.name)
+                ;
+
+            elements.exit().remove();
+        },
         updateSubreddits: function() {
             var elements = this.nodeGroup.selectAll("g.subreddit")
                 .data(this.graph.subreddits);
@@ -77,14 +121,12 @@ var Map = function() {
                     .attr("r", this.radius);
             nodeEnter
                 .append("text")
-                    .attr("y", -15)
+                    .attr("y", -this.radius)
                     .attr("x", d => -((d.name.length * 12) / 4))
                     .text(d => d.name)
                 ;
 
             elements.exit().remove();
-
-            this.nodeElements = nodeEnter.merge(this.nodeElements);
         },
         updateUsers: function() {
             var elements = this.nodeGroup.selectAll("g.user")
@@ -107,14 +149,12 @@ var Map = function() {
             
             nodeEnter
                 .append("text")
-                    .attr("y", -15)
+                    .attr("y", -this.radius)
                     .attr("x", d => -((d.id.length * 12) / 4))
                     .text(d => d.id)
                 ;
 
             elements.exit().remove();
-
-            this.nodeElements = nodeEnter.merge(this.nodeElements);
         },
         updateLinkElements: function() {
             this.linkElements = this.linkGroup.selectAll("line")
@@ -130,21 +170,24 @@ var Map = function() {
             this.linkElements = linkEnter.merge(this.linkElements);
         },
         updateGraph: function() {
-            this.updateLinkElements();
+            this.updateReddit();
             this.updateSubreddits();
             this.updateUsers();
+            this.updateLinkElements();
+            this.nodeElements = this.nodeGroup.selectAll("g");
         },
         updateSimulation: function() {
             this.updateGraph();
-            var nodeSource = this.graph.subreddits.concat(this.graph.users);
+            var nodeSource = this.graph.reddit.concat(this.graph.subreddits).concat(this.graph.users);
             
             var simulation = this.simulation.nodes(nodeSource);
-            console.log({ subCount: this.graph.subreddits.length, userCount: this.graph.users.length, nodeSourceCount: nodeSource.length});
-            console.log(this.nodeElements._groups);
+            // console.log({ subCount: this.graph.subreddits.length, userCount: this.graph.users.length, nodeSourceCount: nodeSource.length});
 
             simulation.on("tick", () => {
                 this.nodeElements
                     .attr('transform', node => "translate(" + node.x + "," + node.y + ")")
+                    .attr("x", node => node.x)
+                    .attr("y", node => node.y)
                     ;
             
                 this.linkElements
